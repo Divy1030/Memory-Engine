@@ -19,7 +19,7 @@ export async function extractMemories(client: MemoryClient, input: { storeId: st
     max_tokens: 800,
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: 'Extract only durable user memories. Factual memories are stable facts, preferences, goals, or constraints. Episodic memories are meaningful events, decisions, or experiences. Do not extract assistant facts, temporary requests, or secrets. Return JSON exactly as {"memories":[{"kind":"factual"|"episodic","content":"...","confidence":0.0}]}. Return an empty array when there is nothing durable.' },
+      { role: 'system', content: 'Extract only durable user memories. Factual memories are stable attributes, preferences, goals, or constraints. Episodic memories are events or experiences anchored in time or action. Any statement containing a temporal marker such as yesterday, today, last week, recently, or describing something the user learned, attended, decided, visited, completed, or experienced MUST be episodic, not factual. For example, "Yesterday I learned system design" is episodic. Do not extract assistant facts, temporary requests, or secrets. Return JSON exactly as {"memories":[{"kind":"factual"|"episodic","content":"...","confidence":0.0}]}. Return an empty array when there is nothing durable.' },
       { role: 'user', content: `User said:\n${input.userText}\n\nAssistant replied:\n${input.assistantText}` },
     ],
   })
@@ -30,10 +30,12 @@ export async function extractMemories(client: MemoryClient, input: { storeId: st
 
   for (const memory of parsed.data.memories) {
     const normalized = memory.content.toLowerCase().replace(/\s+/g, ' ').trim()
-    const existing = await client.database.from('memories').select('id, content').eq('store_id', input.storeId).eq('kind', memory.kind).eq('content_normalized', normalized).eq('status', 'active').limit(1)
+    const isEpisodic = /\b(yesterday|today|recently|last (night|week|month|year)|this (morning|week)|when i|i (learned|attended|decided|visited|met|went|started|finished|experienced)|user (learned|attended|decided|visited|met|went|started|finished|experienced))\b/i.test(memory.content)
+    const kind = isEpisodic ? 'episodic' : memory.kind
+    const existing = await client.database.from('memories').select('id, content').eq('store_id', input.storeId).eq('kind', kind).eq('content_normalized', normalized).eq('status', 'active').limit(1)
     if (existing.error) continue
     if (existing.data?.length) continue
     const vector = await embed(memory.content)
-    await client.database.from('memories').insert([{ store_id: input.storeId, kind: memory.kind, content: memory.content, content_normalized: normalized, confidence: memory.confidence, embedding: vector, embedding_model: EMBEDDING_MODEL, source_conversation_id: input.conversationId, source_message_id: input.messageId }])
+    await client.database.from('memories').insert([{ store_id: input.storeId, kind, content: memory.content, content_normalized: normalized, confidence: memory.confidence, embedding: vector, embedding_model: EMBEDDING_MODEL, source_conversation_id: input.conversationId, source_message_id: input.messageId }])
   }
 }
