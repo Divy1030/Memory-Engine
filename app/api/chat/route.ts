@@ -54,12 +54,12 @@ export async function POST(request: Request) {
           }
           const assistant = await client.database.from('chat_messages').insert([{ conversation_id: input.conversationId, role: 'assistant', content: assistantText, model: input.model, prompt_tokens: usage?.prompt_tokens ?? null, completion_tokens: usage?.completion_tokens ?? null, retrieval_count: memories.length }]).select('id').single()
           if (assistant.error || !assistant.data) throw assistant.error ?? new Error('Could not save assistant message')
-          // Extract only after the assistant message is persisted. Awaiting this
-          // keeps the memory sidebar consistent immediately after the response.
-          try {
-            await extractMemories(client, { storeId: conversation.store_id, conversationId: input.conversationId, messageId: assistant.data.id, userText: input.content, assistantText })
-          } catch { /* Memory extraction must never break a completed chat. */ }
           controller.close()
+          // Extraction starts only after the response is complete, but it must
+          // not hold the chat stream open or block the next user message.
+          void extractMemories(client, { storeId: conversation.store_id, conversationId: input.conversationId, messageId: assistant.data.id, userText: input.content, assistantText }).catch(() => {
+            // Memory extraction must never break a completed chat.
+          })
         } catch (error) {
           controller.error(error)
         }
