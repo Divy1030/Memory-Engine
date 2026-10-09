@@ -1,5 +1,5 @@
 import { getOpenRouter } from '@/lib/openrouter'
-import { EMBEDDING_MODEL } from '@/lib/config'
+import { DEFAULT_MODEL, EMBEDDING_MODEL } from '@/lib/config'
 import { extractionSchema } from '@/lib/validation'
 
 type MemoryClient = Awaited<ReturnType<typeof import('@/lib/insforge/server').getInsForgeServerClient>>
@@ -12,7 +12,7 @@ export async function embed(text: string) {
 }
 
 export async function extractMemories(client: MemoryClient, input: { storeId: string; conversationId: string; messageId: string; userText: string; assistantText: string }) {
-  const model = process.env.OPENROUTER_CHAT_MODEL ?? 'meta-llama/llama-3.3-8b-instruct:free'
+  const model = process.env.OPENROUTER_CHAT_MODEL ?? DEFAULT_MODEL
   const completion = await getOpenRouter().chat.completions.create({
     model,
     temperature: 0.1,

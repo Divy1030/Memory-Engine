@@ -8,7 +8,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "author": "",
@@ -17,6 +17,8 @@
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
@@ -25,12 +27,12 @@
     "@insforge/sdk": "latest",
     "@openrouter/ai-sdk-provider": "latest",
     "ai": "latest",
+    "autoprefixer": "^10.4.21",
     "next": "latest",
     "openai": "latest",
     "react": "latest",
     "react-dom": "latest",
     "tailwindcss": "^3.4.17",
-    "autoprefixer": "^10.4.21",
     "zod": "latest"
   }
 }

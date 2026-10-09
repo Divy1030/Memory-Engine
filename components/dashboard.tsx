@@ -1,12 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ChatMessage, Conversation, Memory, Store } from '@/lib/types'
 import { MODELS, DEFAULT_MODEL } from '@/lib/config'
 
 type Props = { userEmail: string; initialStores: Store[]; initialConversations: Conversation[]; initialMemories: Memory[] }
 
 export default function Dashboard({ userEmail, initialStores, initialConversations, initialMemories }: Props) {
+  const router = useRouter()
   const [stores, setStores] = useState(initialStores)
   const [conversations, setConversations] = useState(initialConversations)
   const [memories, setMemories] = useState(initialMemories)
@@ -57,9 +59,9 @@ export default function Dashboard({ userEmail, initialStores, initialConversatio
 
   return <main className="flex min-h-screen bg-canvas">
     <aside className="flex w-[310px] shrink-0 flex-col border-r border-line bg-[#151513] p-5">
-      <div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-[0.25em] text-accent">Memory Engine</p><p className="mt-1 max-w-[200px] truncate text-xs text-white/40">{userEmail}</p></div><form action="/api/auth/sign-out" method="post"><button className="text-xs text-white/40 hover:text-white" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/sign-out', { method: 'POST' }); location.href = '/login' }}>Exit</button></form></div>
+      <div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-[0.25em] text-accent">Memory Engine</p><p className="mt-1 max-w-[200px] truncate text-xs text-white/40">{userEmail}</p></div><form action="/api/auth/sign-out" method="post"><button className="text-xs text-white/40 hover:text-white" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/sign-out', { method: 'POST' }); router.push('/login'); router.refresh() }}>Exit</button></form></div>
       <div className="mt-9 flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-widest text-white/40">Stores</span><button onClick={createStore} className="text-xl leading-none text-accent">+</button></div>
-      <div className="scrollbar mt-3 space-y-1 overflow-y-auto">{stores.map((store) => <button key={store.id} onClick={() => { setStoreId(store.id); setConversationId(storeConversations.find((c) => c.store_id === store.id)?.id ?? ''); setMessages([]) }} className={`w-full rounded-xl px-3 py-2 text-left text-sm ${store.id === storeId ? 'bg-accent/15 text-accent' : 'text-white/65 hover:bg-white/5'}`}>◈ {store.name}</button>)}{!stores.length && <p className="px-3 text-sm text-white/35">Create your first store.</p>}</div>
+      <div className="scrollbar mt-3 space-y-1 overflow-y-auto">{stores.map((store) => <button key={store.id} onClick={() => { setStoreId(store.id); setConversationId(conversations.find((conversation) => conversation.store_id === store.id)?.id ?? ''); setMessages([]) }} className={`w-full rounded-xl px-3 py-2 text-left text-sm ${store.id === storeId ? 'bg-accent/15 text-accent' : 'text-white/65 hover:bg-white/5'}`}>◈ {store.name}</button>)}{!stores.length && <p className="px-3 text-sm text-white/35">Create your first store.</p>}</div>
       <div className="mt-8 flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-widest text-white/40">Conversations</span><button onClick={createConversation} className="text-xl leading-none text-accent">+</button></div>
       <div className="scrollbar mt-3 flex-1 space-y-1 overflow-y-auto">{storeConversations.map((conversation) => <button key={conversation.id} onClick={() => selectConversation(conversation.id)} className={`w-full truncate rounded-xl px-3 py-2 text-left text-sm ${conversation.id === conversationId ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/5'}`}>{conversation.title}</button>)}</div>
       <div className="mt-5 border-t border-line pt-4"><p className="text-[10px] uppercase tracking-widest text-white/35">Long-term memory</p><p className="mt-1 text-xs text-white/45">{storeMemories.length} extracted memories</p></div>
