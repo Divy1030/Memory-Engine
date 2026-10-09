@@ -1,8 +1,7 @@
 {
   "name": "memoryengine",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Private conversational memory engine with InsForge and OpenRouter",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -19,15 +18,11 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@insforge/sdk": "latest",
-    "@openrouter/ai-sdk-provider": "latest",
     "@phosphor-icons/react": "^2.1.10",
-    "ai": "latest",
     "autoprefixer": "^10.4.21",
     "next": "latest",
     "openai": "latest",
