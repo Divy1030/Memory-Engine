@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/insforge/server'
 import { getOpenRouter } from '@/lib/openrouter'
 import { embed } from '@/lib/memory'
 import { chatSchema } from '@/lib/validation'
+import { MODELS } from '@/lib/config'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const { client } = await requireUser()
     const input = chatSchema.parse(await request.json())
+    if (!MODELS.some((model) => model.id === input.model)) return NextResponse.json({ error: 'Model is not enabled for this playground' }, { status: 400 })
     const conversationResult = await client.database.from('conversations').select('id, store_id, model').eq('id', input.conversationId).single()
     if (conversationResult.error || !conversationResult.data) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     const conversation = conversationResult.data as { id: string; store_id: string; model: string }

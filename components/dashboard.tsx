@@ -13,13 +13,13 @@ export default function Dashboard({ userEmail, initialStores, initialConversatio
   const [storeId, setStoreId] = useState(initialStores[0]?.id ?? '')
   const [conversationId, setConversationId] = useState(initialConversations.find((c) => c.store_id === initialStores[0]?.id)?.id ?? '')
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [model, setModel] = useState(DEFAULT_MODEL)
+  const [model, setModel] = useState<string>(DEFAULT_MODEL)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
 
   const storeConversations = useMemo(() => conversations.filter((conversation) => conversation.store_id === storeId), [conversations, storeId])
-  const storeMemories = memories
+  const storeMemories = memories.filter((memory) => memory.store_id === storeId)
 
   async function createStore() {
     const name = window.prompt('Store name')?.trim(); if (!name) return
