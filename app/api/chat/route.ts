@@ -22,8 +22,25 @@ export async function POST(request: Request) {
     const history = (historyResult.data ?? []) as Array<{ id: string; role: 'user' | 'assistant'; content: string; model: string | null }>
 
     const queryVector = await embed(input.content)
-    const memoriesResult = await client.database.rpc('match_memories', { p_store_id: conversation.store_id, p_query_embedding: queryVector, p_match_count: 6, p_match_threshold: 0.68 })
-    const memories = memoriesResult.error ? [] : (memoriesResult.data ?? []) as Array<{ content: string; kind: string; similarity: number }>
+    const memoriesResult = await client.database.rpc('match_memories', { p_store_id: conversation.store_id, p_query_embedding: queryVector, p_match_count: 8, p_match_threshold: 0.54 })
+    const semanticMemories = memoriesResult.error ? [] : (memoriesResult.data ?? []) as Array<{ id: string; content: string; kind: string; similarity: number }>
+    // Short factual questions can be semantically sparse (for example, "my age?").
+    // Add a small store-scoped lexical fallback so direct fact lookups do not
+    // disappear just because their embedding score is below the ANN threshold.
+    const factLookup = /\b(my|me|what|who|where|when|age|name|birthday|born|years? old|prefer|favorite|goal|job|work)\b/i.test(input.content)
+    let memories = semanticMemories
+    if (factLookup) {
+      const fallbackResult = await client.database.from('memories').select('id, content, kind, confidence').eq('store_id', conversation.store_id).eq('status', 'active').order('created_at', { ascending: false }).limit(100)
+      const queryTokens = input.content.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2 && !['what', 'when', 'where', 'does', 'have', 'about'].includes(token))
+      const directFact = (fallbackResult.data ?? []).filter((memory: { id: string; content: string; kind: string }) => {
+        const content = memory.content.toLowerCase()
+        const ageQuestion = /\bage\b|\bborn\b|\byears? old\b/.test(input.content.toLowerCase()) && /\bage\b|\bborn\b|\byears? old\b|\byear\b/.test(content)
+        return ageQuestion || queryTokens.some((token) => content.includes(token))
+      }).map((memory: { id: string; content: string; kind: string }) => ({ ...memory, similarity: 1 }))
+      const merged = new Map(memories.map((memory) => [memory.id, memory]))
+      for (const memory of directFact) merged.set(memory.id, memory)
+      memories = [...merged.values()].slice(0, 8)
+    }
 
     const userMessage = await client.database.from('chat_messages').insert([{ conversation_id: input.conversationId, role: 'user', content: input.content }]).select('id').single()
     if (userMessage.error || !userMessage.data) throw userMessage.error ?? new Error('Could not save user message')

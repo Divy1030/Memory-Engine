@@ -19,13 +19,16 @@ export async function extractMemories(client: MemoryClient, input: { storeId: st
     max_tokens: 800,
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: 'Extract only durable user memories. Factual memories are stable attributes, preferences, goals, or constraints. Episodic memories are events or experiences anchored in time or action. Any statement containing a temporal marker such as yesterday, today, last week, recently, or describing something the user learned, attended, decided, visited, completed, or experienced MUST be episodic, not factual. For example, "Yesterday I learned system design" is episodic. Do not extract assistant facts, temporary requests, or secrets. Return JSON exactly as {"memories":[{"kind":"factual"|"episodic","content":"...","confidence":0.0}]}. Return an empty array when there is nothing durable.' },
+      { role: 'system', content: 'Extract only durable user memories. Factual memories include age, identity details, location, preferences, goals, and constraints. Episodic memories are events or experiences anchored in time or action. Any statement containing a temporal marker such as yesterday, today, last week, recently, or describing something the user learned, attended, decided, visited, completed, or experienced MUST be episodic, not factual. For example, "Yesterday I learned system design" is episodic. A statement such as "I am 25 years old" is factual. Do not extract assistant facts, temporary requests, or secrets. Return JSON exactly as {"memories":[{"kind":"factual"|"episodic","content":"...","confidence":0.0}]}. Return an empty array when there is nothing durable.' },
       { role: 'user', content: `User said:\n${input.userText}\n\nAssistant replied:\n${input.assistantText}` },
     ],
   })
   const raw = completion.choices[0]?.message?.content
   if (!raw) return
-  const parsed = extractionSchema.safeParse(JSON.parse(raw))
+  const json = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+  let decoded: unknown
+  try { decoded = JSON.parse(json) } catch { return }
+  const parsed = extractionSchema.safeParse(decoded)
   if (!parsed.success) return
 
   for (const memory of parsed.data.memories) {
